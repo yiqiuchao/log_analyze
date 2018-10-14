@@ -1,0 +1,7 @@
+# Secrets file #
+###################
+*secrets.*
+
+# Downloaded files #
+###################
+download_logs
