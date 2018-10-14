@@ -8,7 +8,6 @@ import sys
 import time
 import json
 import signal
-import logging
 import tarfile
 import urlparse
 import datetime
@@ -18,6 +17,8 @@ import multiprocessing
 # Disable the annoying warnings.
 from urllib3 import disable_warnings
 disable_warnings()
+
+import common
 
 # Get token
 # ref: https://stackoverflow.com/questions/13567507/passing-csrftoken-with-python-requests
@@ -206,7 +207,7 @@ def mp_handler(worker, params, num_of_threads):
 def init_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--secrets', type=argparse.FileType('r'),
-                        default='logserver_secrets.json',
+                        default='./logserver_secrets.json',
                         help='json file to read account information from')
     parser.add_argument('-l', '--logserver', type=str, default='prod',
                         choices=['dev', 'merge', 'prod', 'pre-prod', 'beta'],
@@ -242,33 +243,6 @@ def make_local_dirs():
     # then change to that dir, all the logs would be saved there.
     os.chdir(logserver_dir)
 
-# Set up loggings
-def init_logger():
-    # create logger
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
-
-    # create console handler and set level
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-
-    # create formatter
-    formatter = logging.Formatter('%(asctime)s - %(process)d - %(levelname)s - %(message)s')
-
-    # add formatter to ch
-    ch.setFormatter(formatter)
-
-    # add ch to logger
-    logger.addHandler(ch)
-    return logger
-
-    # 'application' code
-    # logger.debug('debug message')
-    # logger.info('info message')
-    # logger.warn('warn message')
-    # logger.error('error message')
-    # logger.critical('critical message')
-
 # Print header
 def print_header():
     print "*"*150
@@ -287,7 +261,7 @@ g_start_time = time.time()
 
 # Initialization
 g_args        = init_args()
-g_logger      = init_logger()
+g_logger      = common.init_logger()
 
 # Get secrets from json
 js = json.load(g_args.secrets)
