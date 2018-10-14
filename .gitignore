@@ -1,6 +1,6 @@
 # file #
 ###################
-*secrests.json
+*secrets.json
 *.pyc
 
 # Downloaded files #
