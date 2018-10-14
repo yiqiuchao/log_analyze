@@ -4,6 +4,7 @@ import os
 import re
 import json
 from collections import defaultdict
+from operator import itemgetter
 import common
 
 versions = defaultdict(list)
@@ -39,12 +40,15 @@ for path, subdirs, files in os.walk('./'):
                             statuses[status[0]].append((path, file))
 
 
-for key, values in versions.iteritems():
-    logger.info("%s\t%d", key, len(values))
-    for value in values:
-        logger.debug(str(key)+'\t'+value[0]+'\t'+value[1])
+def print_map_by_order(m,n=1):
+    items=[]
+    for key, values in m.iteritems():
+        logger.debug("%s\t%d", key, len(values))
+        items.append((key, len(values)))
+        for value in values:
+            logger.debug(str(key)+'\t'+value[0]+'\t'+value[1])
+    for item in sorted(items, key=itemgetter(n)):
+        logger.info("%s\t%d", item[0], item[1])
 
-for key, values in statuses.iteritems():
-    logger.info("%s\t%d", key, len(values))
-    for value in values:
-        logger.debug(str(key)+'\t'+value[0]+'\t'+value[1])
+print_map_by_order(versions)
+print_map_by_order(statuses)
