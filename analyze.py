@@ -10,6 +10,7 @@ import argparse
 
 versions = defaultdict(list)
 statuses = defaultdict(list)
+version_status_list = []
 logger = common.init_logger()
     
 parser = argparse.ArgumentParser()
@@ -28,6 +29,8 @@ with args.secrets as fd:
     pattern_status   = re.compile(patterns['status'])
 
 for path, subdirs, files in os.walk(args.rootdir):
+    version = ""
+    status  = ""
     for file in files:
         if 'alt' not in path:
             with open(os.path.join(path, file), 'r') as fd:
@@ -47,6 +50,8 @@ for path, subdirs, files in os.walk(args.rootdir):
                         if status:
                             logger.debug("status = %s", status)
                             statuses[status[0]].append((path, file))
+                            if version:
+                                version_status_list.append((version[0], status[0], path, file))
 
 
 def print_map_by_order(m,n=1):
@@ -61,3 +66,7 @@ def print_map_by_order(m,n=1):
 
 print_map_by_order(versions)
 print_map_by_order(statuses)
+
+f = open("./status_code.txt", "w")
+for version_status in sorted(version_status_list, key=itemgetter(0, 1)):
+    print >> f, "%s\t%s\t%s/%s" % (version_status[0], version_status[1], version_status[2], version_status[3])

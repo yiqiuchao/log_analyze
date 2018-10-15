@@ -2,6 +2,10 @@
 ###################
 *secrets.json
 *.pyc
+*.txt
+*.temp
+*.tmp
+*temp*
 
 # Downloaded files #
 ###################
