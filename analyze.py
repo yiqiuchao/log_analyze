@@ -6,19 +6,28 @@ import json
 from collections import defaultdict
 from operator import itemgetter
 import common
+import argparse
 
 versions = defaultdict(list)
 statuses = defaultdict(list)
 logger = common.init_logger()
+    
+parser = argparse.ArgumentParser()
+parser.add_argument('-s', '--secrets', type=argparse.FileType('r'),
+                    default='./logserver_secrets.json',
+                    help='json file to read account information from')
+parser.add_argument('-r', '--rootdir', type=str, default='./',
+                    help='the root diretory.')
+args = parser.parse_args()
 
 # Android version number pattern
-with open('./logserver_secrets.json') as fd:
+with args.secrets as fd:
     patterns         = json.load(fd)['patterns']
     pattern_ios      = re.compile(patterns['ios'])
     pattern_android  = re.compile(patterns['android'])
     pattern_status   = re.compile(patterns['status'])
 
-for path, subdirs, files in os.walk('./'):
+for path, subdirs, files in os.walk(args.rootdir):
     for file in files:
         if 'alt' not in path:
             with open(os.path.join(path, file), 'r') as fd:
