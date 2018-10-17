@@ -50,7 +50,7 @@ for path, subdirs, files in os.walk(args.rootdir):
                         if status:
                             logger.debug("status = %s", status)
                             statuses[status[0]].append((path, file))
-                            if version:
+                            if version and (version[0], status[0], path, file) not in version_status_list:
                                 version_status_list.append((version[0], status[0], path, file))
 
 
