@@ -68,5 +68,5 @@ print_map_by_order(versions)
 print_map_by_order(statuses)
 
 f = open("./status_code.txt", "w")
-for version_status in sorted(version_status_list, key=itemgetter(0, 1)):
+for version_status in sorted(version_status_list, key=itemgetter(0, 1), reverse=True):
     print >> f, "%s\t%s\t%s/%s" % (version_status[0], version_status[1], version_status[2], version_status[3])
