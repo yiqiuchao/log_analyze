@@ -139,7 +139,12 @@ def extract_file(file):
         g_logger.warning('Failed to extract %s' % file)
         ret = False
 
-    tar.close()
+    try:
+        tar.close()
+    except:
+        g_logger.warning('Failed to close %s' % file)
+        ret = False
+
     return ret
 
 def delete_file(file):
@@ -207,7 +212,7 @@ def mp_handler(worker, params, num_of_threads):
 def init_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--secrets', type=argparse.FileType('r'),
-                        default='./logserver_secrets.json',
+                        default='./secrets.json',
                         help='json file to read account information from')
     parser.add_argument('-l', '--logserver', type=str, default='prod',
                         choices=['dev', 'merge', 'prod', 'pre-prod', 'beta'],

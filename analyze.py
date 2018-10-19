@@ -10,23 +10,28 @@ import argparse
 
 versions = defaultdict(list)
 statuses = defaultdict(list)
-version_status_list = []
+version_status = set()
 logger = common.init_logger()
     
 parser = argparse.ArgumentParser()
 parser.add_argument('-s', '--secrets', type=argparse.FileType('r'),
-                    default='./logserver_secrets.json',
+                    default='./secrets.json',
                     help='json file to read account information from')
-parser.add_argument('-r', '--rootdir', type=str, default='./',
+parser.add_argument('-d', '--rootdir', type=str, default='./',
                     help='the root diretory.')
 args = parser.parse_args()
 
-# Android version number pattern
 with args.secrets as fd:
-    patterns         = json.load(fd)['patterns']
+    js               = json.load(fd)
+    # read patterns
+    patterns         = js['patterns']
     pattern_ios      = re.compile(patterns['ios'])
     pattern_android  = re.compile(patterns['android'])
     pattern_status   = re.compile(patterns['status'])
+    pattern_version  = re.compile(patterns['version'])
+    # read status code relevant
+    code_file        = js['status_code']['file']
+    code_ignore      = js['status_code']['ignore']
 
 for path, subdirs, files in os.walk(args.rootdir):
     version = ""
@@ -38,7 +43,7 @@ for path, subdirs, files in os.walk(args.rootdir):
                     for line in fd:
                         version = pattern_ios.findall(line)
                         if not version:
-                            version = pattern_android.findall(line)                        
+                            version = pattern_android.findall(line)
                         if version:
                             logger.debug(version[0])
                             versions[version[0]].append((path, file))
@@ -46,12 +51,12 @@ for path, subdirs, files in os.walk(args.rootdir):
                 # get status code
                 if re.match("logfile", file):
                     for line in fd:
-                        status = re.findall(pattern_status, line)
+                        status = pattern_status.findall(line)
                         if status:
                             logger.debug("status = %s", status)
                             statuses[status[0]].append((path, file))
-                            if version and (version[0], status[0], path, file) not in version_status_list:
-                                version_status_list.append((version[0], status[0], path, file))
+                            if version:
+                                version_status.add((version[0], status[0], path, file))
 
 
 def print_map_by_order(m,n=1):
@@ -67,6 +72,8 @@ def print_map_by_order(m,n=1):
 print_map_by_order(versions)
 print_map_by_order(statuses)
 
-f = open("./status_code.txt", "w")
-for version_status in sorted(version_status_list, key=itemgetter(0, 1), reverse=True):
-    print >> f, "%s\t%s\t%s/%s" % (version_status[0], version_status[1], version_status[2], version_status[3])
+if code_file:
+    with open(code_file, "w") as f:
+        for item in sorted(list(version_status), key=itemgetter(0, 1), reverse=True):
+            if pattern_version.match(item[0]) and item[1] not in code_ignore:
+                print >> f, "%s\t%s\t%s/%s" % (item[0], item[1], item[2], item[3])
