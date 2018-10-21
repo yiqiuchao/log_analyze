@@ -29,3 +29,6 @@ def delete_prefix(name, pre):
 def debug_print(s, index, print_index):
     if index == print_index:
         print s
+
+def beep():
+    print "\a"

@@ -308,6 +308,7 @@ def main():
     # download and extract logs.
     get_log_files(log_list)
     print_footer()
+    common.beep()
 
 if __name__ == '__main__':
     main()
