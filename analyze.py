@@ -36,6 +36,8 @@ with args.secrets as fd:
     # read status code relevant
     code_file        = js['status_code']['file']
     code_ignore      = js['status_code']['ignore']
+    # read others
+    query            = js['common']['query']
 
 def do_analyze(path):
     # TODO: do we still need those two?
@@ -48,31 +50,38 @@ def do_analyze(path):
             g_logger.info("Analyzing: [%d/%d]: %s" % (g_counter_processed.value, g_num_logs_total, os.path.join(path, path)))
     path = os.path.join(path, 'logs')
     files = os.listdir(path)
-    for file in files:
+    # sort files to make sure logfile0 is the first one in this list.
+    for file in sorted(files):
         if re.match("logfile", file):
-            with open(os.path.join(path, file), 'r') as fd:
-                if (file == "logfile0"):
+            try:
+                with open(os.path.join(path, file), 'r') as fd:
+                    if (file == "logfile0"):
+                        for line in fd:
+                            version = pattern_ios.findall(line)
+                            if not version:
+                                version = pattern_android.findall(line)
+                            if version:
+                                g_logger.debug(version[0])
+                                versions[version[0]].append((path, file))
+                                break
+                    # get status code
                     for line in fd:
-                        version = pattern_ios.findall(line)
-                        if not version:
-                            version = pattern_android.findall(line)
-                        if version:
-                            g_logger.debug(version[0])
-                            versions[version[0]].append((path, file))
-                            break
-                # get status code
-                for line in fd:
-                    status = pattern_status.findall(line)
-                    if status:
-                        g_logger.debug("status = %s", status)
-                        statuses[status[0]].append((path, file))
-                        if version:
-                            g_version_status.append((version[0], status[0], path, file))
+                        status = pattern_status.findall(line)
+                        if status:
+                            g_logger.debug("status = %s", status)
+                            statuses[status[0]].append((path, file))
+                            if version:
+                                g_version_status.append((version[0], status[0], path, file))
+            except:
+                g_logger.info("Analyzing: Failed to process '%s'" % os.path.join(path, file))
 
 def get_file_list():
-    for path, _, _ in os.walk(args.rootdir):
-        if path.endswith('DISC.AUTO'):
-            g_lines.append(path)
+    for path, subdirs, _ in os.walk(args.rootdir):
+        if subdirs and subdirs[0].endswith(query):
+            for subdir in subdirs:
+                g_lines.append(os.path.join(path, subdir))
+            # empty subdirs to save time.
+            subdirs[:]
     return len(g_lines)
 
 if (args.rootdir):
