@@ -44,8 +44,8 @@ def get_page((client, next_path)):
         g_logger.error("post to %s failed." % url)
         return
     
-    global g_shared_list
-    g_shared_list.append(r.text)
+    global g_shared_page_list
+    g_shared_page_list.append(r.text)
 
     global g_counter_pages
     with g_counter_pages.get_lock():
@@ -174,15 +174,17 @@ def get_log_file((file_id, file_name, timestamp)):
     if download_file(url, file_path):
         if extract_file(file_path):
             global g_counter_processed
+            global g_shared_downloaded_file_list
             # += operation is not atomic, so we need to get a lock:
             with g_counter_processed.get_lock():
                 g_counter_processed.value += 1
-            g_logger.info("Processed[%d/%d] %s" % (g_counter_processed.value, g_num_logs_total, file_name))
+                g_logger.info("Downloading[%d/%d] %s" % (g_counter_processed.value, g_num_logs_total, file_name))
+                g_shared_downloaded_file_list.append(os.path.join(os.getcwd(), file_path.replace(g_file_suffix, '')))
         else:
             global g_counter_failed
             # += operation is not atomic, so we need to get a lock:
             with g_counter_failed.get_lock():
-                g_counter_failed.value += 1        
+                g_counter_failed.value += 1
         delete_file(file_path)
 
 # download, extract to dirs and then remove log files.
@@ -286,7 +288,9 @@ g_counter_pages      = multiprocessing.Value('i', 0)
 g_counter_processed  = multiprocessing.Value('i', 0)
 g_counter_existed    = multiprocessing.Value('i', 0)
 g_counter_failed     = multiprocessing.Value('i', 0)
-g_shared_list        = multiprocessing.Manager().list()
+
+g_shared_page_list            = multiprocessing.Manager().list()
+g_shared_downloaded_file_list = multiprocessing.Manager().list()
 # Readonly for worker threads.
 g_num_logs_total     = 0
 
@@ -304,9 +308,17 @@ def main():
     # each item in this list is a tuple with three fields: id, name, timestamp, looks like:
     # (u'6200211', u'log-6324E-982E2E41FE4240F5A638FA76D505D61A-1539130461.DISC.AUTO.tar.gz', u'Oct. 10, 2018, 12:14 a.m.')
     log_list = []
-    g_num_logs_total = fill_log_list(''.join(g_shared_list).splitlines(), log_list)
+    g_num_logs_total = fill_log_list(''.join(g_shared_page_list).splitlines(), log_list)
     # download and extract logs.
     get_log_files(log_list)
+    # save downloaded logs list to a file.
+    global g_shared_downloaded_file_list
+    log_list_file = 'downloaded_log_list.tmp'
+    with open(log_list_file, "w") as f:
+        g_logger.info("Start to save to %s" % log_list_file)
+        for line in sorted(g_shared_downloaded_file_list):
+            print >> f, line
+
     print_footer()
     common.beep()
 
