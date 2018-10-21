@@ -33,26 +33,28 @@ with args.secrets as fd:
     code_file        = js['status_code']['file']
     code_ignore      = js['status_code']['ignore']
 
+g_logger.info("Start to analyze logs in %s" % args.rootdir)
+
 num = int(0)
 for path, subdirs, files in os.walk(args.rootdir):
     version = ""
     status  = ""
-    for file in files:
-        if 'alt' not in path:
-            with open(os.path.join(path, file), 'r') as fd:
-                g_logger.info("Analyzing [%d/%d]: %s" % (num, 0, os.path.join(path, file)))
-                if (file == "logfile0"):
-                    num += 1
-                    for line in fd:
-                        version = pattern_ios.findall(line)
-                        if not version:
-                            version = pattern_android.findall(line)
-                        if version:
-                            g_logger.debug(version[0])
-                            versions[version[0]].append((path, file))
-                            break
-                # get status code
-                if re.match("logfile", file):
+    if path.endswith('logs'):
+        for file in files:
+            if re.match("logfile", file):
+                with open(os.path.join(path, file), 'r') as fd:
+                    g_logger.info("Analyzing [%d/%d]: %s" % (num, 0, os.path.join(path, file)))
+                    if (file == "logfile0"):
+                        num += 1
+                        for line in fd:
+                            version = pattern_ios.findall(line)
+                            if not version:
+                                version = pattern_android.findall(line)
+                            if version:
+                                g_logger.debug(version[0])
+                                versions[version[0]].append((path, file))
+                                break
+                    # get status code
                     num += 1
                     for line in fd:
                         status = pattern_status.findall(line)
@@ -61,12 +63,6 @@ for path, subdirs, files in os.walk(args.rootdir):
                             statuses[status[0]].append((path, file))
                             if version:
                                 version_status.add((version[0], status[0], path, file))
-
-num = int(0)
-for path, subdirs, files in os.walk("download_logs/prod"):
-    if path.endswith('logs'):
-        num += 1
-print num
 
 def print_map_by_order(m,n=1):
     items=[]
@@ -83,6 +79,7 @@ print_map_by_order(statuses)
 
 if code_file:
     with open(code_file, "w") as f:
+        g_logger.info("Start to save to %s" % code_file)
         for item in sorted(list(version_status), key=itemgetter(0, 1), reverse=True):
             if pattern_version.match(item[0]) and item[1] not in code_ignore:
                 print >> f, "%s\t%s\t%s/%s" % (item[0], item[1], item[2], item[3])
