@@ -7,7 +7,7 @@ from collections import defaultdict
 from operator import itemgetter
 import common
 import argparse
-import signal
+# import signal
 import multiprocessing
 
 g_logger = common.init_logger()
@@ -36,22 +36,6 @@ with args.secrets as fd:
     # read status code relevant
     code_file        = js['status_code']['file']
     code_ignore      = js['status_code']['ignore']
-
-def mp_handler(worker, params, num_of_threads):
-    original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
-    pool = multiprocessing.Pool(processes=num_of_threads)
-    signal.signal(signal.SIGINT, original_sigint_handler)
-    try:
-        res = pool.map_async(worker, params)
-        # waiting for a long time to make sure it's done its jobs.
-        res.get(1000000)
-    except KeyboardInterrupt:
-        g_logger.debug("Caught KeyboardInterrupt, terminating workers")
-        pool.terminate()
-    else:
-        g_logger.debug("Normal termination")
-        pool.close()
-    pool.join()
 
 def do_analyze(path):
     # TODO: do we still need those two?
@@ -102,7 +86,7 @@ else:
             g_lines.append(line.rstrip())
 
 g_logger.info("Analyzing: Start to analyze logs(%d) in %s" % (g_num_logs_total, args.rootdir))
-mp_handler(do_analyze, g_lines, 8)
+common.mp_handler(do_analyze, g_lines, 8)
 
 # def print_map_by_order(m,n=1):
 #     items=[]
@@ -119,7 +103,7 @@ mp_handler(do_analyze, g_lines, 8)
 
 if code_file:
     with open(code_file, "w") as f:
-        g_logger.info("Start to save to %s" % code_file)
+        g_logger.info("Analyzing: Save result to %s" % code_file)
         for item in sorted(list(set(g_version_status)), key=itemgetter(0, 1), reverse=True):
             if pattern_version.match(item[0]) and item[1] not in code_ignore:
                 print >> f, "%s\t%s\t%s/%s" % (item[0], item[1], item[2], item[3])

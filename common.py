@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 import logging
+import signal
+import multiprocessing
 
 # Set up loggings
 def init_logger():
@@ -32,3 +34,18 @@ def debug_print(s, index, print_index):
 
 def beep():
     print "\a"
+
+def mp_handler(worker, params, num_of_threads):
+    original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
+    pool = multiprocessing.Pool(processes=num_of_threads)
+    signal.signal(signal.SIGINT, original_sigint_handler)
+    try:
+        res = pool.map_async(worker, params)
+        # waiting for a long time to make sure it's done its jobs.
+        res.get(1000000)
+    except KeyboardInterrupt:
+        print "Caught KeyboardInterrupt, terminating workers"
+        pool.terminate()
+    else:
+        pool.close()
+    pool.join()
