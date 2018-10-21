@@ -20,3 +20,12 @@ def init_logger():
     # add ch to logger
     logger.addHandler(ch)
     return logger
+
+def delete_prefix(name, pre):
+    if pre in name:
+        return name[len(pre):]
+    return name
+
+def debug_print(s, index, print_index):
+    if index == print_index:
+        print s
