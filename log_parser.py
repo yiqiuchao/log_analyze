@@ -141,11 +141,12 @@ if args.status_file:
     mp_handler(parse_line, lines, 8)
     g_shared_list.append("Total logs processed: %d" % g_counter_processed.value)
 else:
+    devices  = defaultdict(str)
+    messages = defaultdict(list)
     for file in os.listdir(args.dir):
         if re.match(logfile, file):
-            # parse(args.dir+file)
-            print "TODO"
-    # save_to_memory(g_shared_list, args.dir, 0)
+            parse(os.path.join(args.dir, file), devices, messages)
+    save_to_memory(devices, messages, args.dir)
 
 with open('log_parser.txt', 'w') as fd_out:
     for item in g_shared_list:
